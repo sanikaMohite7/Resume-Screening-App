@@ -1,33 +1,34 @@
-# you need to install all these in your terminal
-# pip install streamlit
-# pip install scikit-learn
-# pip install python-docx
-# pip install PyPDF2
-
-
 import streamlit as st
 import pickle
-import docx  # Extract text from Word file
-import PyPDF2  # Extract text from PDF
+import docx  
+import PyPDF2  
 import re
 
-# Load pre-trained model and TF-IDF vectorizer (ensure these are saved earlier)
-svc_model = pickle.load(open('clf.pkl', 'rb'))  # Example file name, adjust as needed
-tfidf = pickle.load(open('tfidf.pkl', 'rb'))  # Example file name, adjust as needed
-le = pickle.load(open('encoder.pkl', 'rb'))  # Example file name, adjust as needed
-
-
+# Load pre-trained+ model and TF-IDF vectorizer (ensure these are saved earlier)
+svc_model = pickle.load(open('clf.pkl', 'rb'))  
+tfidf = pickle.load(open('tfidf.pkl', 'rb'))  
+le = pickle.load(open('encoder.pkl', 'rb'))  
 # Function to clean resume text
+import re
+import docx  
+
+def clean_text(txt):
+    cleanText = re.sub(r'http\S+\s', ' ', txt)  
+    cleanText = re.sub(r'#\S+\s', ' ', cleanText)
+    cleanText = re.sub(r'@\S+', '  ', cleanText)
+    cleanText = re.sub(r'[!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~]', ' ', cleanText)
+    cleanText = re.sub(r'\s+', ' ', cleanText)  
+    return cleanText
+
 def cleanResume(txt):
     cleanText = re.sub('http\S+\s', ' ', txt)
     cleanText = re.sub('RT|cc', ' ', cleanText)
     cleanText = re.sub('#\S+\s', ' ', cleanText)
-    cleanText = re.sub('@\S+', '  ', cleanText)
+    cleanText = re.sub('@\S+', '  ', cleanText)  
     cleanText = re.sub('[%s]' % re.escape("""!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""), ' ', cleanText)
-    cleanText = re.sub(r'[^\x00-\x7f]', ' ', cleanText)
+    cleanText = re.sub(r'[^\x00-\x7f]', ' ', cleanText) 
     cleanText = re.sub('\s+', ' ', cleanText)
     return cleanText
-
 
 # Function to extract text from PDF
 def extract_text_from_pdf(file):
@@ -49,11 +50,11 @@ def extract_text_from_docx(file):
 
 # Function to extract text from TXT with explicit encoding handling
 def extract_text_from_txt(file):
-    # Try using utf-8 encoding for reading the text file
+    
     try:
         text = file.read().decode('utf-8')
     except UnicodeDecodeError:
-        # In case utf-8 fails, try 'latin-1' encoding as a fallback
+        
         text = file.read().decode('latin-1')
     return text
 
@@ -74,41 +75,35 @@ def handle_file_upload(uploaded_file):
 
 # Function to predict the category of a resume
 def pred(input_resume):
-    # Preprocess the input text (e.g., cleaning, etc.)
+    
     cleaned_text = cleanResume(input_resume)
 
-    # Vectorize the cleaned text using the same TF-IDF vectorizer used during training
     vectorized_text = tfidf.transform([cleaned_text])
 
-    # Convert sparse matrix to dense
     vectorized_text = vectorized_text.toarray()
 
-    # Prediction
     predicted_category = svc_model.predict(vectorized_text)
 
-    # get name of predicted category
     predicted_category_name = le.inverse_transform(predicted_category)
 
-    return predicted_category_name[0]  # Return the category name
+    return predicted_category_name[0]  
 
 
-# Streamlit app layout
 def main():
     st.set_page_config(page_title="Resume Category Prediction", page_icon="📄", layout="wide")
 
     st.title("Resume Category Prediction App")
     st.markdown("Upload a resume in PDF, TXT, or DOCX format and get the predicted job category.")
 
-    # File upload section
     uploaded_file = st.file_uploader("Upload a Resume", type=["pdf", "docx", "txt"])
 
     if uploaded_file is not None:
-        # Extract text from the uploaded file
+        
         try:
             resume_text = handle_file_upload(uploaded_file)
             st.write("Successfully extracted the text from the uploaded resume.")
 
-            # Display extracted text (optional)
+        
             if st.checkbox("Show extracted text", False):
                 st.text_area("Extracted Resume Text", resume_text, height=300)
 
@@ -119,6 +114,40 @@ def main():
 
         except Exception as e:
             st.error(f"Error processing the file: {str(e)}")
+
+def predict_resume_keywords(file_path):
+    import docx2txt
+    import re
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
+    # Extract text from the resume
+    text = docx2txt.process(file_path)
+
+    # --- Extract keywords ---
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=10)
+    tfidf_matrix = vectorizer.fit_transform([text])
+    keywords = vectorizer.get_feature_names_out()
+
+    # --- Extract structured sections using simple regex rules ---
+    def extract_section(keyword):
+        pattern = rf"{keyword}(.+?)(\n[A-Z][^\n]+:|\Z)"
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+        return match.group(1).strip() if match else ""
+
+    resume_data = {
+        "name": re.findall(r"^[A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?", text)[0],
+        "contact": re.findall(r"\+91\s*\d{10}", text) + re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text),
+        "objective": extract_section("OBJECTIVE"),
+        "skills": extract_section("SKILLS"),
+        "education": extract_section("EDUCATION"),
+        "experience": extract_section("WORK EXPERIENCE"),
+        "projects": extract_section("PROJECTS"),
+        "achievements": extract_section("ACHIEVEMENTS"),
+        "keywords": list(keywords),
+    }
+
+    return resume_data
+
 
 
 if __name__ == "__main__":
