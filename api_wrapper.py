@@ -1,29 +1,26 @@
-# api_wrapper.py
-
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-# import extract  # your resume extraction logic
-import os
-import tempfile
 
-app_api = FastAPI()
+app = FastAPI()
 
-# Enable CORS for frontend connection
-app_api.add_middleware(
+# Allow frontend requests (adjust origins if needed)
+app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # for dev; restrict to your domain in prod
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app_api.post("/upload")
-async def upload_resume(resume: UploadFile = File(...)):
-    contents = await resume.read()
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        tmp.write(contents)
-        tmp_path = tmp.name
-
-    response = extract.process_resume(tmp_path)  # extract logic
-    os.remove(tmp_path)
-    return response
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        print(f"Received file: {file.filename}")
+        # Optional: save file to disk for testing
+        with open(f"./uploaded_{file.filename}", "wb") as f:
+            f.write(contents)
+        return {"filename": file.filename, "status": "success"}
+    except Exception as e:
+        print("Upload failed:", str(e))
+        return {"status": "error", "message": str(e)}
