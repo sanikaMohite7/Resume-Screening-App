@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-import extract  # your resume extraction logic
+# import extract  # your resume extraction logic
 import os
 import tempfile
 
