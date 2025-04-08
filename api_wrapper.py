@@ -1,29 +1,29 @@
+# api_wrapper.py
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import extract  # your resume extraction logic
 import os
-import shutil
-import app  # uses app.py from your project
+import tempfile
 
 app_api = FastAPI()
 
+# Enable CORS for frontend connection
 app_api.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # for dev; restrict to your domain in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-UPLOAD_FOLDER = "Resume-Screening-App/uploaded"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 @app_api.post("/upload")
 async def upload_resume(resume: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_FOLDER, resume.filename)
-    with open(file_path, "wb") as f:
-        shutil.copyfileobj(resume.file, f)
+    contents = await resume.read()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
 
-    # Get structured summary + keywords
-    resume_summary = app.predict_resume_keywords(file_path)
-
-    return resume_summary
+    response = extract.process_resume(tmp_path)  # extract logic
+    os.remove(tmp_path)
+    return response
