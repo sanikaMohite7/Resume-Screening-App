@@ -1,0 +1,87 @@
+<!-- <!DOCTYPE html>
+<html>
+<head><title>Resume Summary Extractor</title></head>
+<body>
+  <h2>Upload Resume</h2>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="resume" />
+    <button type="submit">Upload</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      const res = await fetch("http://localhost:8000/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      // Build a detailed summary
+      const resultHTML = `
+        <h3>Resume Summary</h3>
+        <p><strong>Name:</strong> ${data.name || 'N/A'}</p>
+        <p><strong>Contact:</strong> ${data.contact ? data.contact.join(", ") : 'N/A'}</p>
+        <p><strong>Objective:</strong> ${data.objective || 'N/A'}</p>
+        <p><strong>Skills:</strong> ${data.skills || 'N/A'}</p>
+        <p><strong>Education:</strong> ${data.education || 'N/A'}</p>
+        <p><strong>Experience:</strong> ${data.experience || 'N/A'}</p>
+        <p><strong>Projects:</strong> ${data.projects || 'N/A'}</p>
+        <p><strong>Achievements:</strong> ${data.achievements || 'N/A'}</p>
+        <p><strong>Keywords:</strong> ${data.keywords ? data.keywords.join(", ") : 'N/A'}</p>
+      `;
+
+      document.getElementById("result").innerHTML = resultHTML;
+    });
+  </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html>
+<head><title>Resume Summary Extractor</title></head>
+<body>
+  <h2>Upload Resume</h2>
+  <form action="https://resume-screening-app-bafn.onrender.com/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="resume" />
+    <button type="submit">Upload</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      const res = await fetch("https://resume-screening-app-bafn.onrender.com/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      const resultHTML = `
+        <h3>Resume Summary</h3>
+        <p><strong>Name:</strong> ${data.name || 'N/A'}</p>
+        <p><strong>Contact:</strong> ${data.contact ? data.contact.join(", ") : 'N/A'}</p>
+        <p><strong>Objective:</strong> ${data.objective || 'N/A'}</p>
+        <p><strong>Skills:</strong> ${data.skills || 'N/A'}</p>
+        <p><strong>Education:</strong> ${data.education || 'N/A'}</p>
+        <p><strong>Experience:</strong> ${data.experience || 'N/A'}</p>
+        <p><strong>Projects:</strong> ${data.projects || 'N/A'}</p>
+        <p><strong>Achievements:</strong> ${data.achievements || 'N/A'}</p>
+        <p><strong>Keywords:</strong> ${data.keywords ? data.keywords.join(", ") : 'N/A'}</p>
+      `;
+
+      document.getElementById("result").innerHTML = resultHTML;
+    });
+  </script>
+</body>
+</html>
